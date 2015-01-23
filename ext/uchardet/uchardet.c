@@ -209,6 +209,9 @@ UCharsetDetector_detect(int argc, VALUE *argv, VALUE self)
     Data_Get_Struct(self, UCharsetDetector, detector);
     
     const UCharsetMatch *match = ucsdet_detect(detector, &status);
+    if (!match) {
+        return Qfalse;
+    }
     ensure(status);
         
     const char *encoding_name = ucsdet_getName(match, &status);
