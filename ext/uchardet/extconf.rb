@@ -7,6 +7,6 @@ end
 
 $LIBS << ' ' + `#{icu_config} --ldflags-system`.strip
 $LIBS << ' ' + `#{icu_config} --ldflags-libsonly`.strip
-$LDFLAGS <<  ' ' + `#{icu_config} --ldflags-searchpath`.strip
+$LDFLAGS << ' ' + `#{icu_config} --ldflags-searchpath`.strip
 
-create_makefile("uchardet")
+create_makefile('uchardet')

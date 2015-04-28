@@ -1,35 +1,34 @@
 # encoding: utf-8
 
-require "test/unit"
+require 'test/unit'
 
-$:.unshift File.dirname(__FILE__) + "/../ext/uchardet"
-require "uchardet.so"
+$LOAD_PATH.unshift File.dirname(__FILE__) + '/../ext/uchardet'
+require 'uchardet.so'
 
 class TestUchardetExtn < Test::Unit::TestCase   # :nodoc:
-  
   def test_init
     assert_not_nil(ICU::UCharsetDetector)
-    
+
     assert_nothing_raised do
       detector = ICU::UCharsetDetector.new
       assert_not_nil(detector)
-    
+
       detector = ICU::UCharsetDetector.new nil
       assert_not_nil(detector)
-    
+
       detector = ICU::UCharsetDetector.new 'some text'
       assert_not_nil(detector)
     end
-    
+
     assert_raise(TypeError) do
       detector = ICU::UCharsetDetector.new 0
     end
-    
+
     assert_raise(TypeError) do
       detector = ICU::UCharsetDetector.new Time.now
     end
   end
-  
+
   def test_detect
     detector = ICU::UCharsetDetector.new
     assert_raise(ICU::Error) do
@@ -37,16 +36,16 @@ class TestUchardetExtn < Test::Unit::TestCase   # :nodoc:
     end
     e = detector.detect '∂∆∂∆∂∆'
     assert(e.is_a? Hash)
-    assert(e.has_key? :encoding)
-    assert(e.has_key? :confidence)
-    assert(e.has_key? :language)
+    assert(e.key? :encoding)
+    assert(e.key? :confidence)
+    assert(e.key? :language)
     assert_equal('utf-8', e[:encoding].downcase)
     e = detector.detect '··', 'utf-8'
     assert_equal('utf-8', e[:encoding].downcase)
     e = detector.detect '··', 'Shift_JIS'
     assert_equal('utf-8', e[:encoding].downcase)
   end
-  
+
   def test_detect_all
     detector = ICU::UCharsetDetector.new
     assert_raise(ICU::Error) do
@@ -56,11 +55,11 @@ class TestUchardetExtn < Test::Unit::TestCase   # :nodoc:
     assert(a.is_a? Array)
     assert_equal(false, a.empty?)
     assert(a[0].is_a? Hash)
-    assert(a[0].has_key? :encoding)
-    assert(a[0].has_key? :confidence)
-    assert(a[0].has_key? :language)
+    assert(a[0].key? :encoding)
+    assert(a[0].key? :confidence)
+    assert(a[0].key? :language)
   end
-  
+
   def test_input_filtered_accessor
     detector = ICU::UCharsetDetector.new
     assert_equal(false, detector.input_filtered?)
@@ -71,7 +70,7 @@ class TestUchardetExtn < Test::Unit::TestCase   # :nodoc:
     detector.input_filtered = nil
     assert_equal(false, detector.input_filtered?)
   end
-  
+
   def test_text_accessor
     detector = ICU::UCharsetDetector.new
     assert_equal(nil, detector.text)
@@ -82,7 +81,7 @@ class TestUchardetExtn < Test::Unit::TestCase   # :nodoc:
     detector.detect
     assert_equal('test', detector.text)
   end
-  
+
   def test_declared_encoding_accessor
     detector = ICU::UCharsetDetector.new
     assert_equal(nil, detector.declared_encoding)
@@ -91,11 +90,10 @@ class TestUchardetExtn < Test::Unit::TestCase   # :nodoc:
     detector.detect 'test'
     assert_equal('iso-8859-15', detector.declared_encoding)
   end
-  
+
   def test_detectable_charsets
     detector = ICU::UCharsetDetector.new
     assert_not_nil(detector.detectable_charsets)
     assert(detector.detectable_charsets.is_a? Array)
   end
-  
 end
