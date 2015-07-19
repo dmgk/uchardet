@@ -12,29 +12,28 @@ namespace :extconf do
     # "lib"
   ]
 
-
-  task :compile => extension do
+  task compile: extension do
     if Dir.glob("**/#{extension}.{o,so,dll}").length == 0
-      STDERR.puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-      STDERR.puts "Gem actually failed to build.  Your system is"
+      STDERR.puts '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      STDERR.puts 'Gem actually failed to build.  Your system is'
       STDERR.puts "NOT configured properly to build #{GEM_NAME}."
-      STDERR.puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+      STDERR.puts '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
       exit(1)
     end
   end
 
   desc "Builds just the #{extension} extension"
-  task extension.to_sym => ["#{ext}/Makefile", ext_so ]
+  task extension.to_sym => ["#{ext}/Makefile", ext_so]
 
   file "#{ext}/Makefile" => ["#{ext}/extconf.rb"] do
-    Dir.chdir(ext) do ruby "extconf.rb" end
+    Dir.chdir(ext) do ruby 'extconf.rb' end
   end
 
   file ext_so => ext_files do
     Dir.chdir(ext) do
-      sh(RUBY_PLATFORM =~ /win32/ ? 'nmake' : 'make') do |ok, res|
-        if !ok
-          require "fileutils"
+      sh(RUBY_PLATFORM =~ /win32/ ? 'nmake' : 'make') do |ok, _res|
+        unless ok
+          require 'fileutils'
           FileUtils.rm Dir.glob('*.{so,o,dll,bundle}')
         end
       end
