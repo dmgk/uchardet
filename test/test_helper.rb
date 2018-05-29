@@ -1,3 +1,3 @@
-require 'stringio'
-require 'test/unit'
-require File.dirname(__FILE__) + '/../lib/uchardet'
+$:.unshift File.expand_path("../../lib", __FILE__)
+require "uchardet"
+require "minitest/autorun"

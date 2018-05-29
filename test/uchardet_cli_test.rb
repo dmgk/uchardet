@@ -1,7 +1,8 @@
-require File.join(File.dirname(__FILE__), "test_helper.rb")
+require "test_helper"
 require 'uchardet/cli'
+require 'stringio'
 
-class TestUchardetCli < Test::Unit::TestCase
+class UchardetCliTest < Minitest::Test
   def setup
     Uchardet::CLI.execute(@stdout_io = StringIO.new, [])
     @stdout_io.rewind

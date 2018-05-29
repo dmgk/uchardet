@@ -1,18 +1,19 @@
 require 'optparse'
+require 'uchardet'
 
 module Uchardet
   class CLI
     def self.execute(stdout, args=[])
       @stdout = stdout
       @options = {
-        :input_filtered => false,
-        :declared_encoding => nil,
-        :detect_all => false,
-        :path => nil
+        input_filtered: false,
+        declared_encoding: nil,
+        detect_all: false,
+        path: nil
       }
       
-      parser = OptionParser.new do |opts|
-        opts.banner = <<-BANNER.gsub(/^\s*/,'')
+      OptionParser.new do |opts|
+        opts.banner = <<-BANNER.gsub(/^\s*/, '')
           Usage: #{File.basename($0)} [options] file
         BANNER
         
@@ -31,6 +32,9 @@ module Uchardet
         opts.on("-h", "--help",
                 "Show this help message."
                 ) { @stdout.puts opts; exit }
+        opts.on("-v", "--version",
+                "Show version."
+                ) { @stdout.puts Uchardet::VERSION; exit }
                 
         if args.empty?
           @stdout.puts opts
@@ -54,7 +58,7 @@ module Uchardet
     end
     
     def self.list
-      ICU::UCharsetDetector.detectable_charsets.uniq.sort.each { |name| @stdout.puts name }
+      ICU::UCharsetDetector.detectable_charsets.uniq.sort.each {|name| @stdout.puts name}
     end
     
     def self.detect

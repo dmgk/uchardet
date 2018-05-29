@@ -56,7 +56,7 @@ UCharsetDetector_get_input_filtered(VALUE self)
  *
  * Enable filtering of input text. If filtering is enabled,
  * text within angle brackets ("<" and ">") will be removed
- * before detection, which will remove most HTML or xml markup.
+ * before detection, which will remove most HTML or XML markup.
  */
 static VALUE
 UCharsetDetector_set_input_filtered(VALUE self, VALUE flag)
@@ -110,7 +110,7 @@ UCharsetDetector_get_declared_encoding(VALUE self)
  *
  * Set the declared encoding for charset detection.
  * The declared encoding of an input text is an encoding obtained
- * by the user from an http header or xml declaration or similar source that
+ * by the user from an HTTP header or XML declaration or similar source that
  * can be provided as an additional hint to the charset detector.
  */
 static VALUE
@@ -123,12 +123,12 @@ static void
 set_text(VALUE self, VALUE text)
 {
     if (!NIL_P(text)) {
-        text = StringValue(text);
-        
         UErrorCode status = U_ZERO_ERROR;
         UCharsetDetector *detector;
+
         Data_Get_Struct(self, UCharsetDetector, detector);
-        
+
+        text = StringValue(text);
         ucsdet_setText(detector, StringValuePtr(text), RSTRING_LEN(text), &status);
         ensure(status);
         
@@ -140,12 +140,12 @@ static void
 set_declared_encoding(VALUE self, VALUE declared_encoding)
 {
     if (!NIL_P(declared_encoding)){
-        declared_encoding = StringValue(declared_encoding);
-        
         UErrorCode status = U_ZERO_ERROR;
         UCharsetDetector *detector;
+
         Data_Get_Struct(self, UCharsetDetector, detector);
 
+        declared_encoding = StringValue(declared_encoding);
         ucsdet_setDeclaredEncoding(detector, StringValuePtr(declared_encoding), RSTRING_LEN(declared_encoding), &status);
         ensure(status);
         
@@ -183,7 +183,8 @@ UCharsetDetector_initialize(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   detect(text=nil, declared_encoding=nil)
  *
- * Return the charset that best matches the supplied input data.
+ * Return the charset that best matches the supplied input data. If no match
+ * could be found, this method returns nil.
  * 
  * Note though, that because the detection 
  * only looks at the start of the input data,
@@ -199,28 +200,32 @@ UCharsetDetector_detect(int argc, VALUE *argv, VALUE self)
 {
     VALUE text;
     VALUE declared_encoding;
+    UErrorCode status = U_ZERO_ERROR;
+    UCharsetDetector *detector;
+    const UCharsetMatch *match = NULL;
+    const char *encoding_name = "";
+    int32_t encoding_confidence = 0;
+    const char *encoding_language = "";
+    VALUE hash = rb_hash_new();
     
     rb_scan_args(argc, argv, "02", &text, &declared_encoding);
     set_text(self, text);
     set_declared_encoding(self, declared_encoding);
     
-    UErrorCode status = U_ZERO_ERROR;
-    UCharsetDetector *detector;
     Data_Get_Struct(self, UCharsetDetector, detector);
-    
-    const UCharsetMatch *match = ucsdet_detect(detector, &status);
-    ensure(status);
-        
-    const char *encoding_name = ucsdet_getName(match, &status);
+
+    match = ucsdet_detect(detector, &status);
     ensure(status);
 
-    int32_t encoding_confidence = ucsdet_getConfidence(match, &status);
-    ensure(status);
-        
-    const char *encoding_language = ucsdet_getLanguage(match, &status);
-    ensure(status);
-        
-    VALUE hash = rb_hash_new();
+    if (match) {
+        encoding_name = ucsdet_getName(match, &status);
+        ensure(status);
+        encoding_confidence = ucsdet_getConfidence(match, &status);
+        ensure(status);
+        encoding_language = ucsdet_getLanguage(match, &status);
+        ensure(status);
+    }
+
     rb_hash_aset(hash, ID2SYM(rb_intern("encoding")), rb_str_new2(encoding_name));
     rb_hash_aset(hash, ID2SYM(rb_intern("confidence")), INT2NUM(encoding_confidence));
     rb_hash_aset(hash, ID2SYM(rb_intern("language")), rb_str_new2(encoding_language));
@@ -249,37 +254,41 @@ UCharsetDetector_detect_all(int argc, VALUE *argv, VALUE self)
 {
     VALUE text;
     VALUE declared_encoding;
+    UCharsetDetector *detector;
+    UErrorCode status = U_ZERO_ERROR;
+    const UCharsetMatch **matches = NULL;
+    int32_t matches_found = 0;
+    VALUE ary = rb_ary_new();
+    int i;
     
     rb_scan_args(argc, argv, "02", &text, &declared_encoding);
     set_text(self, text);
     set_declared_encoding(self, declared_encoding);
     
-    UCharsetDetector *detector;
     Data_Get_Struct(self, UCharsetDetector, detector);
-    UErrorCode status = U_ZERO_ERROR;
-    int32_t matches_found;
     
-    const UCharsetMatch **matches = ucsdet_detectAll(detector, &matches_found, &status);
+    matches = ucsdet_detectAll(detector, &matches_found, &status);
     ensure(status);
     
-    VALUE ary = rb_ary_new();
-    int i = 0;
-    
     for (i = 0; i < matches_found; i++) {
-        const char *encoding_name = ucsdet_getName(matches[i], &status);
-        ensure(status);
-
-        int32_t encoding_confidence = ucsdet_getConfidence(matches[i], &status);
-        ensure(status);
-        
-        const char *encoding_language = ucsdet_getLanguage(matches[i], &status);
-        ensure(status);
-        
+        const char *encoding_name = "";
+        int32_t encoding_confidence = 0;
+        const char *encoding_language = "";
         VALUE hash = rb_hash_new();
+
+        if (matches[i]) {
+            encoding_name = ucsdet_getName(matches[i], &status);
+            ensure(status);
+            encoding_confidence = ucsdet_getConfidence(matches[i], &status);
+            ensure(status);
+            encoding_language = ucsdet_getLanguage(matches[i], &status);
+            ensure(status);
+        }
+        
         rb_hash_aset(hash, ID2SYM(rb_intern("encoding")), rb_str_new2(encoding_name));
         rb_hash_aset(hash, ID2SYM(rb_intern("confidence")), INT2NUM(encoding_confidence));
         rb_hash_aset(hash, ID2SYM(rb_intern("language")), rb_str_new2(encoding_language));
-        
+
         rb_ary_push(ary, hash);
     }
     
@@ -296,15 +305,16 @@ static VALUE
 UCharsetDetector_get_detectable_charsets(VALUE self)
 {
     UCharsetDetector *detector;
-    Data_Get_Struct(self, UCharsetDetector, detector);
     UErrorCode status = U_ZERO_ERROR;
-    
-    UEnumeration *charsets = ucsdet_getAllDetectableCharsets(detector, &status);
-    ensure(status);
-    
+    UEnumeration *charsets = NULL;
+    const char *charset_name = "";
+    int32_t result_length = 0;
     VALUE ary = rb_ary_new();
-    int32_t result_length;
-    const char *charset_name;
+
+    Data_Get_Struct(self, UCharsetDetector, detector);
+    
+    charsets = ucsdet_getAllDetectableCharsets(detector, &status);
+    ensure(status);
     
     while (charset_name = uenum_next(charsets, &result_length, &status)) {
         ensure(status);
@@ -318,7 +328,7 @@ UCharsetDetector_get_detectable_charsets(VALUE self)
 /*
 */
 void
-Init_uchardet()
+Init_uchardet_ext()
 {
     VALUE mICU = rb_define_module("ICU");
     
