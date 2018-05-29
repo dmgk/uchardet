@@ -6,6 +6,8 @@ Fast character set encoding detection using International Components for Unicode
 * https://github.com/dmgk/uchardet
 * https://www.rubydoc.info/gems/uchardet/
 
+[![Build Status](https://travis-ci.org/dmgk/uchardet.svg?branch=master)](https://travis-ci.org/dmgk/uchardet)
+
 ## Installation
 
 Add this line to your application's Gemfile:
